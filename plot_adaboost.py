@@ -6,9 +6,13 @@ import matplotlib as mpl
 from sklearn.datasets import make_gaussian_quantiles
 # from sklearn.model_selection import train_test_split
 
-from sklearn.ensemble import AdaBoostClassifier
+# This was to compare the result with sklearn AdaBoostClassifier calculation
+# from sklearn.ensemble import AdaBoostClassifier
 
+# For desision tree classifier
 from sklearn.tree import DecisionTreeClassifier
+# ￿For logistic regression classifier
+from scipy.optimize import fmin_tnc
 
 
 # We’re going to use the function below to visualize our data points,
@@ -17,6 +21,8 @@ def plot_adaboost(X: np.ndarray,
                   y: np.ndarray,
                   clf=None,
                   sample_weights: Optional[np.ndarray] = None,
+                  stump_weight = None,
+                  error = None,
                   annotate: bool = False,
                   ax: Optional[mpl.axes.Axes] = None) -> None:
     """ Plot ± samples in 2D, optionally with decision boundary if model is provided. """
@@ -69,6 +75,9 @@ def plot_adaboost(X: np.ndarray,
     ax.set_ylim(y_min + 0.5, y_max - 0.5)
     ax.set_xlabel('$x_1$')
     ax.set_ylabel('$x_2$')
+    ax.text(x_min, y_min, 'Alpha = {:.5f}\nEpsilon = {:.5f}'.format(stump_weight, error),
+             style='italic',
+             bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10})
 
 
 # We will generate a toy dataset.
@@ -101,9 +110,9 @@ def make_toy_dataset(n: int = 100, random_seed: int = None) -> (np.ndarray, np.n
 # print(f'Train error: {train_err:.1%}')
 # plt.show()
 
+
 class AdaBoost:
     """ AdaBoost enemble classifier from scratch """
-
     def __init__(self):
         self.stumps = None
         self.stump_weights = None
@@ -114,6 +123,92 @@ class AdaBoost:
         """ Validate assumptions about format of input data"""
         assert set(y) == {-1, 1}, 'Expecting response variable to be formatted as ±1'
         return X, y
+
+
+# Logistic Regression Class definition
+class LogisticRegressionUsingGD:
+    @staticmethod
+    def sigmoid(x):
+        # Activation function used to map any real value between 0 and 1
+        return 1 / (1 + np.exp(-x))
+
+    @staticmethod
+    def net_input(theta, x):
+        # Computes the weighted sum of inputs Similar to Linear Regression
+
+        return np.dot(x, theta)
+
+    def probability(self, theta, x):
+        # Calculates the probability that an instance belongs to a particular class
+
+        return self.sigmoid(self.net_input(theta, x))
+
+    def cost_function(self, theta, x, y):
+        # Computes the cost function for all the training samples
+        m = x.shape[0]
+        total_cost = -(1 / m) * np.sum(
+            y * np.log(self.probability(theta, x)) + (1 - y) * np.log(
+                1 - self.probability(theta, x)))
+        return total_cost
+
+    def gradient(self, theta, x, y):
+        # Computes the gradient of the cost function at the point theta
+        m = x.shape[0]
+        return (1 / m) * np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)
+
+    def fit(self, x, y, theta):
+        """trains the model from the training data
+        Uses the fmin_tnc function that is used to find the minimum for any function
+        It takes arguments as
+            1) func : function to minimize
+            2) x0 : initial values for the parameters
+            3) fprime: gradient for the function defined by 'func'
+            4) args: arguments passed to the function
+        Parameters
+        ----------
+        x: array-like, shape = [n_samples, n_features]
+            Training samples
+        y: array-like, shape = [n_samples, n_target_values]
+            Target classes
+        theta: initial weights
+        Returns
+        -------
+        self: An instance of self
+        """
+        opt_weights = fmin_tnc(func=self.cost_function, x0=theta, fprime=self.gradient,
+                               args=(x, y.flatten()))
+        self.w_ = opt_weights[0]
+        return self
+
+    def predict(self, x):
+        """ Predicts the class labels
+        Parameters
+        ----------
+        x: array-like, shape = [n_samples, n_features]
+            Test samples
+        Returns
+        -------
+        predicted class labels
+        """
+        theta = self.w_[:, np.newaxis]
+        return self.probability(theta, x)
+
+    def accuracy(self, x, actual_classes, probab_threshold=0.5):
+        """Computes the accuracy of the classifier
+        Parameters
+        ----------
+        x: array-like, shape = [n_samples, n_features]
+            Training samples
+        actual_classes : class labels from the training data set
+        probab_threshold: threshold/cutoff to categorize the samples into different classes
+        Returns
+        -------
+        accuracy: accuracy of the model
+        """
+        predicted_classes = (self.predict(x) >= probab_threshold).astype(int)
+        predicted_classes = predicted_classes.flatten()
+        accuracy = np.mean(predicted_classes == actual_classes)
+        return accuracy * 100
 
 
 def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
@@ -164,19 +259,63 @@ def predict(self, X):
     return np.sign(np.dot(self.stump_weights, stump_preds))
 
 
-X, y = make_toy_dataset(n=10, random_seed=10)
-bench = AdaBoostClassifier(n_estimators=10, algorithm='SAMME').fit(X, y)
-plot_adaboost(X, y, bench)
+def truncate_adaboost(clf, t: int):
+    """ Truncate a fitted AdaBoost up to (and including) a particular iteration """
+    assert t > 0, 't must be a positive integer'
+    from copy import deepcopy
+    new_clf = deepcopy(clf)
+    new_clf.stumps = clf.stumps[:t]
+    new_clf.stump_weights = clf.stump_weights[:t]
+    return new_clf
 
-train_err = (bench.predict(X) != y).mean()
-print(f'Train error: {train_err:.1%}')
+
+def plot_staged_adaboost(X, y, clf, iters=10):
+    """ Plot weak learner and cumulaive strong learner at each iteration. """
+
+    # larger grid
+    fig, axes = plt.subplots(figsize=(8, iters * 3),
+                             nrows=iters,
+                             ncols=2,
+                             sharex=True,
+                             dpi=100)
+
+    fig.set_facecolor('white')
+
+    # _ = fig.suptitle('Decision boundaries by iteration')
+    for i in range(iters):
+        ax1, ax2 = axes[i]
+
+        # Plot weak learner
+        _ = ax1.set_title(f'Weak learner at t={i + 1}')
+        plot_adaboost(X, y, clf.stumps[i], sample_weights=clf.sample_weights[i],stump_weight=clf.stump_weights[i], error=clf.errors[i], annotate=False, ax=ax1)
+
+        # Plot strong learner
+        trunc_clf = truncate_adaboost(clf, t=i + 1)
+        _ = ax2.set_title(f'Strong learner at t={i + 1}')
+        plot_adaboost(X, y, trunc_clf, sample_weights=clf.sample_weights[i],stump_weight=clf.stump_weights[i], error=clf.errors[i], annotate=False, ax=ax2)
+
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.95)
+    plt.show()
+
 
 # assign our individually defined functions as methods of our classifier
 AdaBoost.fit = fit
 AdaBoost.predict = predict
-
+X, y = make_toy_dataset(n=10, random_seed=10)
 clf = AdaBoost().fit(X, y, iters=10)
-plot_adaboost(X, y, clf)
+plot_staged_adaboost(X, y, clf)
 
-train_err = (clf.predict(X) != y).mean()
-print(f'Train error: {train_err:.1%}')
+# X, y = make_toy_dataset(n=10, random_seed=10)
+# bench = AdaBoostClassifier(n_estimators=10, algorithm='SAMME').fit(X, y)
+# plot_adaboost(X, y, bench)
+#
+# # assign our individually defined functions as methods of our classifier
+# AdaBoost.fit = fit
+# AdaBoost.predict = predict
+#
+# clf = AdaBoost().fit(X, y, iters=10)
+# plot_adaboost(X, y, clf)
+#
+# train_err = (clf.predict(X) != y).mean()
+# print(f'Train error: {train_err:.1%}')
