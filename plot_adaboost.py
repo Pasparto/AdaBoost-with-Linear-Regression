@@ -193,6 +193,11 @@ class LogisticRegressionUsingGD:
         theta = self.w_[:, np.newaxis]
         return self.probability(theta, x)
 
+
+
+
+        # return logistic_regression_pred * 2 - 1
+
     def accuracy(self, x, actual_classes, probab_threshold=0.5):
         """Computes the accuracy of the classifier
         Parameters
@@ -216,6 +221,7 @@ def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
 
     X, y = self._check_X_y(X, y)
     n = X.shape[0]
+    theta = np.zeros((X.shape[1], 1))
 
     # init numpy arrays
     self.sample_weights = np.zeros(shape=(iters, n))
@@ -229,8 +235,10 @@ def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
     for t in range(iters):
         # fit  weak learner
         curr_sample_weights = self.sample_weights[t]
-        stump = DecisionTreeClassifier(max_depth=1, max_leaf_nodes=2)
-        stump = stump.fit(X, y, sample_weight=curr_sample_weights)
+        # stump = DecisionTreeClassifier(max_depth=1, max_leaf_nodes=2)
+        # stump = stump.fit(X, y, sample_weight=curr_sample_weights)
+        stump = LogisticRegressionUsingGD()
+        stump = stump.fit(X, y, theta=theta)
 
         # calculate error and stump weight from weak learner prediction
         stump_pred = stump.predict(X)
@@ -300,22 +308,17 @@ def plot_staged_adaboost(X, y, clf, iters=10):
 
 
 # assign our individually defined functions as methods of our classifier
-AdaBoost.fit = fit
-AdaBoost.predict = predict
-X, y = make_toy_dataset(n=10, random_seed=10)
-clf = AdaBoost().fit(X, y, iters=10)
-plot_staged_adaboost(X, y, clf)
-
-# X, y = make_toy_dataset(n=10, random_seed=10)
-# bench = AdaBoostClassifier(n_estimators=10, algorithm='SAMME').fit(X, y)
-# plot_adaboost(X, y, bench)
-#
-# # assign our individually defined functions as methods of our classifier
 # AdaBoost.fit = fit
 # AdaBoost.predict = predict
-#
+# X, y = make_toy_dataset(n=10, random_seed=10)
 # clf = AdaBoost().fit(X, y, iters=10)
-# plot_adaboost(X, y, clf)
-#
-# train_err = (clf.predict(X) != y).mean()
-# print(f'Train error: {train_err:.1%}')
+# plot_staged_adaboost(X, y, clf)
+# Those were the last commands
+
+X, y = make_toy_dataset(n=10, random_seed=10)
+theta = np.zeros((X.shape[1], 1))
+LR = LogisticRegressionUsingGD()
+LR.fit(X, y, theta)
+# pred = LR.predict(X)
+LR.accuracy(X, y)
+
