@@ -180,7 +180,7 @@ class LogisticRegressionUsingGD:
         self.w_ = opt_weights[0]
         return self
 
-    def predict(self, x):
+    def predict(self, x, probab_threshold=0.5):
         """ Predicts the class labels
         Parameters
         ----------
@@ -191,7 +191,14 @@ class LogisticRegressionUsingGD:
         predicted class labels
         """
         theta = self.w_[:, np.newaxis]
-        return self.probability(theta, x)
+        logistic_prob = self.probability(theta, x)
+        logistic_regression_pred = (logistic_prob >= probab_threshold).astype(int)
+        logistic_regression_pred = (logistic_regression_pred * 2) - 1
+        logistic_regression_pred = logistic_regression_pred.flatten()
+        return logistic_regression_pred
+        # print(type(logistic_regression_pred))
+        # print(logistic_regression_pred)
+        # return self.probability(theta, x)
 
 
 
@@ -308,17 +315,17 @@ def plot_staged_adaboost(X, y, clf, iters=10):
 
 
 # assign our individually defined functions as methods of our classifier
-# AdaBoost.fit = fit
-# AdaBoost.predict = predict
-# X, y = make_toy_dataset(n=10, random_seed=10)
-# clf = AdaBoost().fit(X, y, iters=10)
-# plot_staged_adaboost(X, y, clf)
+AdaBoost.fit = fit
+AdaBoost.predict = predict
+X, y = make_toy_dataset(n=10, random_seed=10)
+clf = AdaBoost().fit(X, y, iters=10)
+plot_staged_adaboost(X, y, clf)
 # Those were the last commands
 
-X, y = make_toy_dataset(n=10, random_seed=10)
-theta = np.zeros((X.shape[1], 1))
-LR = LogisticRegressionUsingGD()
-LR.fit(X, y, theta)
+# X, y = make_toy_dataset(n=10, random_seed=10)
+# theta = np.zeros((X.shape[1], 1))
+# LR = LogisticRegressionUsingGD()
+# LR.fit(X, y, theta)
 # pred = LR.predict(X)
-LR.accuracy(X, y)
+# LR.accuracy(X, y)
 
