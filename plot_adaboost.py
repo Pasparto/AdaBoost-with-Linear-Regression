@@ -42,10 +42,12 @@ def plot_adaboost(X: np.ndarray,
     else:
         sizes = np.ones(shape=X.shape[0]) * 100
 
+    # False positive get bigger
     X_pos = X[y == 1]
     sizes_pos = sizes[y == 1]
     ax.scatter(*X_pos.T, s=sizes_pos, marker='+', color='red')
 
+    # False Negative get bigger
     X_neg = X[y == -1]
     sizes_neg = sizes[y == -1]
     ax.scatter(*X_neg.T, s=sizes_neg, marker='.', c='blue')
@@ -146,7 +148,8 @@ class LogisticRegressionUsingGD:
 
     def cost_function(self, theta, x, y, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
         # Computes the cost function for all the training samples
-        # print(sample_weights)
+        # print("Hello from cost_function, this is sample_wieghts: ",sample_weights)
+        m = x.shape[0]
         weighted_cost = (y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x))) * sample_weights
         total_cost = -1 * np.sum(weighted_cost)
         # print("Im from cost_function and this is y: {}".format(x))
@@ -160,13 +163,14 @@ class LogisticRegressionUsingGD:
 
     def gradient(self, theta, x, y, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
         # Computes the gradient of the cost function at the point theta
-        # print("Im in gradient function the this is m:\n{}".format(m))
+        # print("Hello from gradient function the this is m:\n{}".format(m))
         # print("Hello from gradient this is net input output: {}".format(self.net_input(theta, x)))
         # print("Hello from gradient this is sigmoid output: {}".format(self.sigmoid(self.net_input(theta, x))))
         # print("Hello from gradient this is dot output: {}".format(np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)))
-        sigmoid_output = self.sigmoid(self.net_input(theta, x)) - y
-        weighted_sigmoid = sigmoid_output * sample_weights
-        return np.dot(x.T, weighted_sigmoid)
+        # print("This is sigmoid_output: ", sigmoid_output)
+        # print("This is weighted_sigmoid: ", weighted_sigmoid)
+        m = x.shape[0]
+        return (1 / m) * np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)
 
     def fit(self, x, y, theta, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
         """trains the model from the training data
@@ -188,11 +192,9 @@ class LogisticRegressionUsingGD:
         -------
         self: An instance of self
         """
-        # print(sample_weights)
         opt_weights = fmin_tnc(func=self.cost_function, x0=theta, fprime=self.gradient,
                                args=(x, y.flatten(), sample_weights))
         self.w_ = opt_weights[0]
-        # print("Hello from fit and this is w_: ", opt_weights[0])
         return self
 
     def predict(self, x, probab_threshold=0.5):
@@ -262,6 +264,7 @@ def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
 
         # calculate error and stump weight from weak learner prediction
         stump_pred = stump.predict(X)
+        print("Hello from AdaBoost fit function, logistic regression pred is: ", stump_pred)
         y = (y * 2) - 1
         err = curr_sample_weights[(stump_pred != y)].sum()  # / n
         stump_weight = np.log((1 - err) / err) / 2
@@ -345,9 +348,15 @@ plot_staged_adaboost(X, y, clf)
 # X, y = make_toy_dataset(n=10, random_seed=10)
 # y = (y+1) / 2
 # theta = np.zeros((X.shape[1], 1))
-# LR = LogisticRegressionUsingGD()
-# LR.fit(X, y, theta, sample_weights)
-# pred = LR.predict(X)
+# model = LogisticRegressionUsingGD()
+# model.fit(X, y, theta, sample_weights)
+# # pred = LR.predict(X)
+# accuracy = model.accuracy(X, y.flatten())
+# parameters = model.w_
+# print("The accuracy of the model is {}".format(accuracy))
+# print("The model parameters using Gradient descent")
+# print("\n")
+# print("The parameters are (model.w_): ",parameters)
 # print("\n\nThe is from Main:")
 # print(X)
 # print(y)
