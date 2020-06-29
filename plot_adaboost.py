@@ -146,6 +146,7 @@ class LogisticRegressionUsingGD:
 
     def cost_function(self, theta, x, y, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
         # Computes the cost function for all the training samples
+        # print(sample_weights)
         weighted_cost = (y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x))) * sample_weights
         total_cost = -1 * np.sum(weighted_cost)
         # print("Im from cost_function and this is y: {}".format(x))
@@ -160,14 +161,12 @@ class LogisticRegressionUsingGD:
     def gradient(self, theta, x, y, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
         # Computes the gradient of the cost function at the point theta
         # print("Im in gradient function the this is m:\n{}".format(m))
-        # m = x.shape[0]
-        # return (1 / m) * np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)
-
-        # print("Im from gradient and this is my dot product: {}".format(np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)))
-        # print("Im from gradient and this is x.T: {}".format(x.T))
-        # print("Im from gradient and this is my return value: {}".format((1 / m) * np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)))
-        return np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)
-
+        # print("Hello from gradient this is net input output: {}".format(self.net_input(theta, x)))
+        # print("Hello from gradient this is sigmoid output: {}".format(self.sigmoid(self.net_input(theta, x))))
+        # print("Hello from gradient this is dot output: {}".format(np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)))
+        sigmoid_output = self.sigmoid(self.net_input(theta, x)) - y
+        weighted_sigmoid = sigmoid_output * sample_weights
+        return np.dot(x.T, weighted_sigmoid)
 
     def fit(self, x, y, theta, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
         """trains the model from the training data
@@ -189,7 +188,7 @@ class LogisticRegressionUsingGD:
         -------
         self: An instance of self
         """
-        # print(sample_weight)
+        # print(sample_weights)
         opt_weights = fmin_tnc(func=self.cost_function, x0=theta, fprime=self.gradient,
                                args=(x, y.flatten(), sample_weights))
         self.w_ = opt_weights[0]
@@ -209,11 +208,11 @@ class LogisticRegressionUsingGD:
         """
         theta = self.w_[:, np.newaxis]
         logistic_prob = self.probability(theta, x)
-        # print("Hello from predict logistic_prob = ",logistic_prob)
         logistic_regression_pred = (logistic_prob >= probab_threshold).astype(int)
         logistic_regression_pred = (logistic_regression_pred * 2) - 1
         logistic_regression_pred = logistic_regression_pred.flatten()
         return logistic_regression_pred
+        # print("Hello from predict logistic_prob = ",logistic_prob)
         # print(type(logistic_regression_pred))
         # print(logistic_regression_pred)
         # return self.probability(theta, x)
@@ -330,11 +329,11 @@ def plot_staged_adaboost(X, y, clf, iters=10):
 
 
 # assign our individually defined functions as methods of our classifier
-# AdaBoost.fit = fit
-# AdaBoost.predict = predict
-# X, y = make_toy_dataset(n=10, random_seed=10)
-# clf = AdaBoost().fit(X, y, iters=10)
-# plot_staged_adaboost(X, y, clf)
+AdaBoost.fit = fit
+AdaBoost.predict = predict
+X, y = make_toy_dataset(n=10, random_seed=10)
+clf = AdaBoost().fit(X, y, iters=10)
+plot_staged_adaboost(X, y, clf)
 # Those were the last commands
 
 
@@ -342,12 +341,12 @@ def plot_staged_adaboost(X, y, clf, iters=10):
 # print(X[:,[0]]) # This is x
 # print(X[:,[1]]) # This is y
 
-sample_weights = [0.1, 0.1, 0.1 	  	 , 0.1 		, 0.1 	 ,   0.1 ,   0.1,    0.1 , 0.1,0.1]
-X, y = make_toy_dataset(n=10, random_seed=10)
-y = (y+1) / 2
-theta = np.zeros((X.shape[1], 1))
-LR = LogisticRegressionUsingGD()
-LR.fit(X, y, theta, sample_weights)
+# sample_weights = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 ,0.1, 0.1]
+# X, y = make_toy_dataset(n=10, random_seed=10)
+# y = (y+1) / 2
+# theta = np.zeros((X.shape[1], 1))
+# LR = LogisticRegressionUsingGD()
+# LR.fit(X, y, theta, sample_weights)
 # pred = LR.predict(X)
 # print("\n\nThe is from Main:")
 # print(X)
