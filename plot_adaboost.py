@@ -2,6 +2,7 @@ from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from pandas import read_csv
 
 from sklearn.datasets import make_gaussian_quantiles
 # from sklearn.model_selection import train_test_split
@@ -13,6 +14,7 @@ from sklearn.datasets import make_gaussian_quantiles
 from sklearn.tree import DecisionTreeClassifier
 # ￿For logistic regression classifier
 from scipy.optimize import fmin_tnc
+# from sklearn.linear_model import LogisticRegression
 
 
 # We’re going to use the function below to visualize our data points,
@@ -144,16 +146,27 @@ class LogisticRegressionUsingGD:
         # Calculates the probability that an instance belongs to a particular class
 
         # print("Hello from probability this is before the sigma: {}".format(self.sigmoid(self.net_input(theta, x))))
+        # print("This is x: {}\n\n".format(x))
+        # print("This is theta: {}\n\n".format(theta))
+        # print("Hello from probability this is net_input(dot between theta and x): {}\n\n".format(self.net_input(theta, x)))
         return self.sigmoid(self.net_input(theta, x))
 
-    def cost_function(self, theta, x, y, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
+    def cost_function(self, theta, x, y):
         # Computes the cost function for all the training samples
         # print("Hello from cost_function, this is sample_wieghts: ",sample_weights)
-        m = x.shape[0]
-        weighted_cost = (y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x))) * sample_weights
-        total_cost = -1 * np.sum(weighted_cost)
-        # print("Im from cost_function and this is y: {}".format(x))
-        # print("Im from cost_function and this is x: {}".format(y))
+        # m = x.shape[0]
+
+        weighted_cost = (y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x)))
+        weights = np.zeros((1, weighted_cost.shape[0]))
+        weights[0][16] = 1
+        weights[0][17] = 1
+        total_cost = -1 * np.sum(weighted_cost * weights)
+        # print("Hello from cost_function, this is (1 - y) * np.log(1 - self.probability(theta, x)): {}".format(
+        #     (1 - y) * np.log(1 - self.probability(theta, x))))
+        # print("Im from cost_function and this is the vector before the sum: {}".format(weighted_cost))
+        # print("Hello from cost_function, this is y * np.log(self.probability(theta, x)): {}".format(y * np.log(self.probability(theta, x))))
+        # print("Im from cost_function and this is y: {}".format(y))
+        # print("Im from cost_function and this is x: {}".format(x))
         # print("Im from cost_function and this is theta: {}".format(theta))
         # print("Im from cost_function and this is the sum: {}".format(np.sum(y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x)))))
         # print("Im from cost_function and this is the vector before the sum: {}".format(y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x))))
@@ -161,7 +174,7 @@ class LogisticRegressionUsingGD:
         # print("Im from cost_function and this is total cost: {}".format(total_cost))
         return total_cost
 
-    def gradient(self, theta, x, y, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
+    def gradient(self, theta, x, y):
         # Computes the gradient of the cost function at the point theta
         # print("Hello from gradient function the this is m:\n{}".format(m))
         # print("Hello from gradient this is net input output: {}".format(self.net_input(theta, x)))
@@ -169,10 +182,9 @@ class LogisticRegressionUsingGD:
         # print("Hello from gradient this is dot output: {}".format(np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)))
         # print("This is sigmoid_output: ", sigmoid_output)
         # print("This is weighted_sigmoid: ", weighted_sigmoid)
-        m = x.shape[0]
-        return (1 / m) * np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)
+        return np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)
 
-    def fit(self, x, y, theta, sample_weights = [1,1,1,1,1,1,1,1,1,1]):
+    def fit(self, x, y, theta):
         """trains the model from the training data
         Uses the fmin_tnc function that is used to find the minimum for any function
         It takes arguments as
@@ -192,9 +204,25 @@ class LogisticRegressionUsingGD:
         -------
         self: An instance of self
         """
-        opt_weights = fmin_tnc(func=self.cost_function, x0=theta, fprime=self.gradient,
-                               args=(x, y.flatten(), sample_weights))
-        self.w_ = opt_weights[0]
+        # print("Hello from Logistic regression fit, this is y: {}".format(y))
+        # print("Hello from Logistic regression fit, this is type(y): {}".format(type(y)))
+        # print("Hello from Logistic regression fit, this is y.flatten: {}".format(y.flatten()))
+        # opt_weights = fmin_tnc(func=self.cost_function, x0=theta, fprime=self.gradient,
+        #                        args=(x, y.flatten(), sample_weights))
+        # self.w_ = opt_weights[0]
+        # return self
+        weights = np.zeros((1, x.shape[0]))
+        weights[0][16] = 1
+        weights[0][17] = 1
+
+        lr = 0.01
+        for i in range(1000000):
+            z = np.dot(x, theta)
+            h = self.sigmoid(z)
+            gradient = np.dot(x.T * weights, (h - y)) / y.size
+            theta -= lr * gradient
+        theta = theta.T.reshape((3,))
+        self.w_ = theta
         return self
 
     def predict(self, x, probab_threshold=0.5):
@@ -264,7 +292,7 @@ def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
 
         # calculate error and stump weight from weak learner prediction
         stump_pred = stump.predict(X)
-        print("Hello from AdaBoost fit function, logistic regression pred is: ", stump_pred)
+        # print("Hello from AdaBoost fit function, logistic regression pred is: ", stump_pred)
         y = (y * 2) - 1
         err = curr_sample_weights[(stump_pred != y)].sum()  # / n
         stump_weight = np.log((1 - err) / err) / 2
@@ -332,11 +360,12 @@ def plot_staged_adaboost(X, y, clf, iters=10):
 
 
 # assign our individually defined functions as methods of our classifier
-AdaBoost.fit = fit
-AdaBoost.predict = predict
-X, y = make_toy_dataset(n=10, random_seed=10)
-clf = AdaBoost().fit(X, y, iters=10)
-plot_staged_adaboost(X, y, clf)
+# AdaBoost.fit = fit
+# AdaBoost.predict = predict
+# X, y = make_toy_dataset(n=10, random_seed=10)
+# # X = np.c_[np.ones((X.shape[0], 1)), X]
+# clf = AdaBoost().fit(X, y, iters=10)
+# plot_staged_adaboost(X, y, clf)
 # Those were the last commands
 
 
@@ -346,16 +375,17 @@ plot_staged_adaboost(X, y, clf)
 
 # sample_weights = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 ,0.1, 0.1]
 # X, y = make_toy_dataset(n=10, random_seed=10)
+# X = np.c_[np.ones((X.shape[0], 1)), X]
 # y = (y+1) / 2
 # theta = np.zeros((X.shape[1], 1))
 # model = LogisticRegressionUsingGD()
-# model.fit(X, y, theta, sample_weights)
+# model.fit(X, y, theta)
 # # pred = LR.predict(X)
 # accuracy = model.accuracy(X, y.flatten())
 # parameters = model.w_
+# print("\nThe is from Main:")
 # print("The accuracy of the model is {}".format(accuracy))
 # print("The model parameters using Gradient descent")
-# print("\n")
 # print("The parameters are (model.w_): ",parameters)
 # print("\n\nThe is from Main:")
 # print(X)
@@ -363,3 +393,54 @@ plot_staged_adaboost(X, y, clf)
 # print("The prediction of logic regression is: {}".format(pred))
 # print("The real data set is:{}".format(y))
 
+def load_data(path, header):
+    marks_df = read_csv(path, header=header)
+    return marks_df
+
+
+data = load_data("data/marks.txt", None)
+
+# X = feature values, all the columns except the last column
+X = data.iloc[:, :-1]
+
+# y = target values, last column of the data frame
+y = data.iloc[:, -1]
+
+# filter out the applicants that got admitted
+admitted = data.loc[y == 1]
+
+# filter out the applicants that din't get admission
+not_admitted = data.loc[y == 0]
+
+# plots
+plt.scatter(admitted.iloc[:, 0], admitted.iloc[:, 1], s=10, label='Admitted')
+plt.scatter(not_admitted.iloc[:, 0], not_admitted.iloc[:, 1], s=10,
+            label='Not Admitted')
+
+# preparing the data for building the model
+X = np.c_[np.ones((X.shape[0], 1)), X]
+y = y[:, np.newaxis]
+theta = np.zeros((X.shape[1], 1))
+
+# Logistic Regression from scratch using Gradient Descent
+model = LogisticRegressionUsingGD()
+model.fit(X, y, theta)
+accuracy = model.accuracy(X, y.flatten())
+parameters = model.w_
+print("The accuracy of the model is {}".format(accuracy))
+print("The model parameters using Gradient descent")
+print("\n")
+print(parameters)
+
+
+# --------------------------- FROM HERE IS PLOTTING AND BANCHMARKS ---------------------------
+
+
+x_values = [np.min(X[:, 1] - 2), np.max(X[:, 2] + 2)]
+y_values = - (parameters[0] + np.dot(parameters[1], x_values)) / parameters[2]
+
+plt.plot(x_values, y_values, label='Decision Boundary')
+plt.xlabel('Marks in 1st Exam')
+plt.ylabel('Marks in 2nd Exam')
+plt.legend()
+plt.show()
