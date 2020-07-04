@@ -15,7 +15,6 @@ from sklearn.tree import DecisionTreeClassifier
 # ￿For logistic regression classifier
 from scipy.optimize import fmin_tnc
 
-
 # from sklearn.linear_model import LogisticRegression
 
 
@@ -75,6 +74,7 @@ def plot_adaboost(X: np.ndarray,
     if annotate:
         for i, (x, y) in enumerate(X):
             offset = 0.05
+            print("point {}: x={}\t y={}".format(i,x + offset,y - offset))
             ax.annotate(f'$x_{i + 1}$', (x + offset, y - offset))
 
     ax.set_xlim(x_min + 0.5, x_max - 0.5)
@@ -105,7 +105,7 @@ def make_toy_dataset(n: int = 100, random_seed: int = None) -> (np.ndarray, np.n
 
     return X, y * 2 - 1
 
-
+# Benchmark
 # Let’s establish a benchmark for what our model’s output should resemble
 # by importing AdaBoostClassifier from scikit-learn and fitting it to our toy dataset.
 # This code run without AdaBoost class
@@ -152,7 +152,7 @@ class LogisticRegressionGD(object):
     Sum-of-squares cost function value in each epoch.
     """
 
-    def __init__(self, eta=0.05, n_iter=100, random_state=1):
+    def __init__(self, eta=0.05, n_iter=10000, random_state=1):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
@@ -166,6 +166,7 @@ class LogisticRegressionGD(object):
         samples and
         n_features is the number of features.
         y : array-like, shape = [n_samples]
+        sample_weights:
         Target values.
         Returns
         -------
@@ -173,26 +174,44 @@ class LogisticRegressionGD(object):
         """
         rgen = np.random.RandomState(self.random_state)
         self.w_ = rgen.normal(loc=0.0, scale=0.01, size=1 + X.shape[1])
+        # print("This is rgen normal(w_): ", self.w_)
+        # print("This is rgen normal(w_[1:]): ", self.w_[1:])
+        # print("This is w_ shape: ", np.shape(self.w_))
+        # print("This is w_[1:] shape: ", np.shape(self.w_[1:]))
+        # print("\n\n")
         self.cost_ = []
+        # sample_weights = np.zeros((X.shape[0],))
+        # sample_weights[3] = 1
+        # sample_weights[7] = 1
         for i in range(self.n_iter):
+            # Here I make a prediction vector
             net_input = self.net_input(X)
+            # Here I convert my predictions to sigmoid values (0.0 to 1.0)
             output = self.activation(net_input)
-            errors = (y - output)
+            # Here I calculate the difference between the real values to my predictions
+            errors = (y - output) * sample_weights
             self.w_[1:] += self.eta * X.T.dot(errors)
             self.w_[0] += self.eta * errors.sum()
+
             # note that we compute the logistic `cost` now
             # instead of the sum of squared errors cost
-            cost = (-y.dot(sample_weights * output) - ((1 - y).dot(sample_weights * (1 - output))))
+            cost = (-y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))))
+            # print("This is the calculated cost: ", cost)
             self.cost_.append(cost)
         return self
 
     def net_input(self, X):
-        """Calculate net input"""
+        """Calculate net input:
+        Calculating the model prediction by using X as the features and w_ as the equation parameters
+        The return is a vector of results [ , X.shape[0]] - number of data set rows
+        """
         return np.dot(X, self.w_[1:]) + self.w_[0]
 
     def activation(self, z):
-        """Compute logistic sigmoid activation"""
-        return 1. / (1. + np.exp(-np.clip(z, -250, 250)))
+        """Compute logistic sigmoid activation
+        Calculating the sigmoid value for each of our predictions
+        """
+        return 1. / (1. + np.exp(-z))
 
     def predict(self, X):
         """Return class label after unit step"""
@@ -365,6 +384,7 @@ def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
         # stump = LogisticRegressionUsingGD()
         stump = LogisticRegressionGD()
         y = (y + 1) / 2
+        # print("This is the current sample weights: ",curr_sample_weights)
         stump = stump.fit(X, y, sample_weights=curr_sample_weights)
 
         # calculate error and stump weight from weak learner prediction
@@ -442,6 +462,7 @@ def plot_staged_adaboost(X, y, clf, iters=10):
 AdaBoost.fit = fit
 AdaBoost.predict = predict
 X, y = make_toy_dataset(n=10, random_seed=10)
+print("This is X: ", X)
 # X = np.c_[np.ones((X.shape[0], 1)), X]
 clf = AdaBoost().fit(X, y, iters=10)
 plot_staged_adaboost(X, y, clf)
