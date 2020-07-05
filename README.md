@@ -1,5 +1,5 @@
 # AdaBoost
-ML with python
+Machine learning with python
 
 My first step was to understand and translate this paper to hebrew (Section 2.1 - 2.3) including all the mathematical proofs and theorems:
 https://www.lri.fr/~kegl/mlcourse/book.pdf
