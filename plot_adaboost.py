@@ -74,7 +74,7 @@ def plot_adaboost(X: np.ndarray,
     if annotate:
         for i, (x, y) in enumerate(X):
             offset = 0.05
-            print("point {}: x={}\t y={}".format(i,x + offset,y - offset))
+            print("point {}: x={}\t y={}".format(i+1, x + offset, y - offset))
             ax.annotate(f'$x_{i + 1}$', (x + offset, y - offset))
 
     ax.set_xlim(x_min + 0.5, x_max - 0.5)
@@ -117,9 +117,10 @@ def make_toy_dataset(n: int = 100, random_seed: int = None) -> (np.ndarray, np.n
 # print(f'Train error: {train_err:.1%}')
 # plt.show()
 
+# ------------------------------------------------------------------------------------------------------------------------
 
 class AdaBoost:
-    """ AdaBoost enemble classifier from scratch """
+    """ AdaBoost ensemble classifier from scratch """
 
     def __init__(self):
         self.stumps = None
@@ -132,10 +133,12 @@ class AdaBoost:
         assert set(y) == {-1, 1}, 'Expecting response variable to be formatted as ±1'
         return X, y
 
+# ------------------------------------------------------------------------------------------------------------------------
 
+# Logistic Regression Class definition
 class LogisticRegressionGD(object):
     """Logistic Regression Classifier using gradient descent.
-    Parameters
+    Parameters:
     ------------
     eta : float
     Learning rate (between 0.0 and 1.0)
@@ -144,7 +147,8 @@ class LogisticRegressionGD(object):
     random_state : int
     Random number generator seed for random weight
     initialization.
-    Attributes
+
+    Attributes:
     -----------
     w_ : 1d-array
     Weights after fitting.
@@ -152,53 +156,10 @@ class LogisticRegressionGD(object):
     Sum-of-squares cost function value in each epoch.
     """
 
-    def __init__(self, eta=0.05, n_iter=10000, random_state=1):
+    def __init__(self, eta=0.05, n_iter=1000, random_state=1):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
-
-    def fit(self, X, y, sample_weights):
-        """Fit training data.
-        Parameters
-        ----------
-        X : {array-like}, shape = [n_samples, n_features]
-        Training vectors, where n_samples is the number of
-        samples and
-        n_features is the number of features.
-        y : array-like, shape = [n_samples]
-        sample_weights:
-        Target values.
-        Returns
-        -------
-        self : object
-        """
-        rgen = np.random.RandomState(self.random_state)
-        self.w_ = rgen.normal(loc=0.0, scale=0.01, size=1 + X.shape[1])
-        # print("This is rgen normal(w_): ", self.w_)
-        # print("This is rgen normal(w_[1:]): ", self.w_[1:])
-        # print("This is w_ shape: ", np.shape(self.w_))
-        # print("This is w_[1:] shape: ", np.shape(self.w_[1:]))
-        # print("\n\n")
-        self.cost_ = []
-        # sample_weights = np.zeros((X.shape[0],))
-        # sample_weights[3] = 1
-        # sample_weights[7] = 1
-        for i in range(self.n_iter):
-            # Here I make a prediction vector
-            net_input = self.net_input(X)
-            # Here I convert my predictions to sigmoid values (0.0 to 1.0)
-            output = self.activation(net_input)
-            # Here I calculate the difference between the real values to my predictions
-            errors = (y - output) * sample_weights
-            self.w_[1:] += self.eta * X.T.dot(errors)
-            self.w_[0] += self.eta * errors.sum()
-
-            # note that we compute the logistic `cost` now
-            # instead of the sum of squared errors cost
-            cost = (-y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))))
-            # print("This is the calculated cost: ", cost)
-            self.cost_.append(cost)
-        return self
 
     def net_input(self, X):
         """Calculate net input:
@@ -215,157 +176,226 @@ class LogisticRegressionGD(object):
 
     def predict(self, X):
         """Return class label after unit step"""
-        return np.where(self.net_input(X) >= 0.0, 1, 0)
+        return np.where(self.net_input(X) >= 0.0, 1, -1)
 
+    def fit(self, X, y, sample_weights):
+        """Fit training data.
+        Parameters
+        ----------
+        X : {array-like}, shape = [n_samples, n_features]
+        Training vectors, where n_samples is the number of
+        samples and
+        n_features is the number of features.
+        y : array-like, shape = [n_samples] from {1,0}
+        Target values.
+        sample_weights :
 
-# # Logistic Regression Class definition
-# class LogisticRegressionUsingGD:
-#     @staticmethod
-#     def sigmoid(x):
-#         # Activation function used to map any real value between 0 and 1
-#         return 1 / (1 + np.exp(-x))
-#
-#     @staticmethod
-#     def net_input(theta, x):
-#         # Computes the weighted sum of inputs Similar to Linear Regression
-#
-#         return np.dot(x, theta)
-#
-#     def probability(self, theta, x):
-#         # Calculates the probability that an instance belongs to a particular class
-#
-#         # print("Hello from probability this is before the sigma: {}".format(self.sigmoid(self.net_input(theta, x))))
-#         # print("This is x: {}\n\n".format(x))
-#         # print("This is theta: {}\n\n".format(theta))
-#         # print("Hello from probability this is net_input(dot between theta and x): {}\n\n".format(self.net_input(theta, x)))
-#         return self.sigmoid(self.net_input(theta, x))
-#
-#     def cost_function(self, theta, x, y, sample_weights):
-#         # Computes the cost function for all the training samples
-#         # print("Hello from cost_function, this is sample_wieghts: ",sample_weights)
-#         # m = x.shape[0]
-#
-#         cost_vector = (y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x)))
-#         # weights = np.zeros((1, cost_vector.shape[0]))
-#         # weights[0][32] = 1
-#         # weights[0][98] = 1
-#         total_cost = -1 * np.sum(cost_vector * sample_weights)
-#         # print("Hello from cost_function, this is (1 - y) * np.log(1 - self.probability(theta, x)): {}".format(
-#         #     (1 - y) * np.log(1 - self.probability(theta, x))))
-#         # print("Im from cost_function and this is the vector before the sum: {}".format(weighted_cost))
-#         # print("Hello from cost_function, this is y * np.log(self.probability(theta, x)): {}".format(y * np.log(self.probability(theta, x))))
-#         # print("Im from cost_function and this is y: {}".format(y))
-#         # print("Im from cost_function and this is x: {}".format(x))
-#         # print("Im from cost_function and this is theta: {}".format(theta))
-#         # print("Im from cost_function and this is the sum: {}".format(np.sum(y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x)))))
-#         # print("Im from cost_function and this is the vector before the sum: {}".format(y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x))))
-#         # print("Im from cost_function and this is weighted_cost: {}".format(weighted_cost))
-#         # print("Im from cost_function and this is total cost: {}".format(total_cost))
-#         return total_cost
-#
-#     def gradient(self, theta, x, y):
-#         # Computes the gradient of the cost function at the point theta
-#         # print("Hello from gradient function the this is m:\n{}".format(m))
-#         # print("Hello from gradient this is net input output: {}".format(self.net_input(theta, x)))
-#         # print("Hello from gradient this is sigmoid output: {}".format(self.sigmoid(self.net_input(theta, x))))
-#         # print("Hello from gradient this is dot output: {}".format(np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)))
-#         # print("This is sigmoid_output: ", sigmoid_output)
-#         # print("This is weighted_sigmoid: ", weighted_sigmoid)
-#         return np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)
-#
-#     def fit(self, x, y, theta, sample_weights):
-#         """trains the model from the training data
-#         Uses the fmin_tnc function that is used to find the minimum for any function
-#         It takes arguments as
-#             1) func : function to minimize
-#             2) x0 : initial values for the parameters
-#             3) fprime: gradient for the function defined by 'func'
-#             4) args: arguments passed to the function
-#         Parameters
-#         ----------
-#         x: array-like, shape = [n_samples, n_features]
-#             Training samples
-#         y: array-like, shape = [n_samples, n_target_values]
-#             Target classes
-#         theta: initial weights
-#         sample_weights: the weights of dataset points
-#         Returns
-#         -------
-#         self: An instance of self
-#         """
-#         # print("Hello from Logistic regression fit, this is y: {}".format(y))
-#         # print("Hello from Logistic regression fit, this is type(y): {}".format(type(y)))
-#         # print("Hello from Logistic regression fit, this is y.flatten: {}".format(y.flatten()))
-#         # opt_weights = fmin_tnc(func=self.cost_function, x0=theta, fprime=self.gradient,
-#         #                        args=(x, y.flatten(), sample_weights))
-#         # self.w_ = opt_weights[0]
-#         # return self
-#         # weights = np.zeros((1, x.shape[0]))
-#         # weights[0][32] = 1
-#         # weights[0][98] = 1
-#
-#         lr = 0.01
-#         for i in range(10000):
-#             # Here I create my prediction vector
-#             z = np.dot(x, theta)
-#             # Here I sigmoid my prediction result to classify my predictions
-#             h = self.sigmoid(z)
-#             #
-#             gradient = np.dot(x.T * sample_weights, (h - y)) / y.size
-#             print("This is gradient shape: ", gradient.shape)
-#             # print("This is theta: {}\nThis is gradient: {}".format(theta, gradient))
-#             # print("This is z: {}\nThis is h: {}".format(z, h))
-#             theta -= lr * gradient
-#         theta = theta.T.reshape((3,))
-#         self.w_ = theta
-#         return self
-#
-#     def predict(self, x, probab_threshold=0.5):
-#         """ Predicts the class labels
-#         Parameters and returns ndarray from {1,-1} values
-#         ----------
-#         x: array-like, shape = [n_samples, n_features]
-#             Test samples
-#         Returns
-#         probab_threshold: number from 0 to 1 - for classification
-#         -------
-#         predicted class labels
-#         """
-#         theta = self.w_[:, np.newaxis]
-#         logistic_prob = self.probability(theta, x)
-#         logistic_regression_pred = (logistic_prob >= probab_threshold).astype(int)
-#         logistic_regression_pred = (logistic_regression_pred * 2) - 1
-#         logistic_regression_pred = logistic_regression_pred.flatten()
-#         return logistic_regression_pred
-#         # print("Hello from predict logistic_prob = ",logistic_prob)
-#         # print(type(logistic_regression_pred))
-#         # print(logistic_regression_pred)
-#         # return self.probability(theta, x)
-#
-#     def accuracy(self, x, actual_classes, probab_threshold=0.5):
-#         """Computes the accuracy of the classifier
-#         Parameters
-#         ----------
-#         x: array-like, shape = [n_samples, n_features]
-#             Training samples
-#         actual_classes : class labels from the training data set
-#         probab_threshold: threshold/cutoff to categorize the samples into different classes
-#         Returns
-#         -------
-#         accuracy: accuracy of the model
-#         """
-#         predicted_classes = (self.predict(x) >= probab_threshold).astype(int)
-#         predicted_classes = predicted_classes.flatten()
-#         accuracy = np.mean(predicted_classes == actual_classes)
-#         return accuracy * 100
+        Returns
+        -------
+        self : object
+        """
+        # Here -1 -> 0 ; 1 -> 1
+        y = (y+1) / 2
+        # Here I generate random numbers to my prediction equation
+        rgen = np.random.RandomState(self.random_state)
+        self.w_ = rgen.normal(loc=0.0, scale=0.01, size=1 + X.shape[1])
+        # print("This is rgen normal(w_): ", self.w_)
+        # print("This is rgen normal(w_[1:]): ", self.w_[1:])
+        # print("This is w_ shape: ", np.shape(self.w_))
+        # print("This is w_[1:] shape: ", np.shape(self.w_[1:]))
+        # print("\n\n")
+        self.cost_ = []
+        # Testing with vector from {1,0} - 1 on indices 3 and 7
+        # sample_weights = np.zeros((X.shape[0],))
+        # sample_weights[3] = 1
+        # sample_weights[7] = 1
+
+        for i in range(self.n_iter):
+            # Here I make a prediction vector
+            net_input = self.net_input(X)
+            # Here I convert my predictions to sigmoid values (values between 0.0 to 1.0)
+            output = self.activation(net_input)
+            output = np.where(output >= 0.5, 1, 0)
+            weighted_output = output
+            # Here I calculate the difference between the real values to my predictions
+            errors = (y - output) * (sample_weights * 10)
+            self.w_[1:] += self.eta * X.T.dot(errors)
+            self.w_[0] += self.eta * errors.sum()
+            # print("\tThis is w_:\n\t", self.w_)
+            # note that we compute the logistic `cost` now
+            # instead of the sum of squared errors cost
+            cost = (-y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))))
+            # print("This is the calculated cost: ", cost)
+            if i == 999 or i == 1:
+                print("i = ",i)
+                print("My w_ is: ",self.w_)
+                print("My errors is: ", errors)
+                print("My y is: ", y)
+                print("My output is: ", output)
+                print("----------------------------")
+
+            self.cost_.append(cost)
+        return self
+
+# ------------------------------------------------------------------------------------------------------------------------
+
+class LogisticRegressionUsingGD:
+    @staticmethod
+    def sigmoid(x):
+        # Activation function used to map any real value between 0 and 1
+        return 1 / (1 + np.exp(-x))
+
+    @staticmethod
+    def net_input(theta, x):
+        # Computes the weighted sum of inputs Similar to Linear Regression
+        return np.dot(x, theta)
+
+    def probability(self, theta, x):
+        # Calculates the probability that an instance belongs to a particular class
+
+        # print("Hello from probability this is before the sigma: {}".format(self.sigmoid(self.net_input(theta, x))))
+        # print("This is x: {}\n\n".format(x))
+        # print("This is theta: {}\n\n".format(theta))
+        # print("Hello from probability this is net_input(dot between theta and x): {}\n\n".format(self.net_input(theta, x)))
+        return self.sigmoid(self.net_input(theta, x))
+
+    def cost_function(self, theta, x, y, sample_weights):
+        # Computes the cost function for all the training samples
+        # print("Hello from cost_function, this is sample_wieghts: ",sample_weights)
+        # m = x.shape[0]
+        cost_vector = (y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x)))
+        # weights = np.zeros((1, cost_vector.shape[0]))
+        # weights[0][32] = 1
+        # weights[0][98] = 1
+        total_cost = -1 * np.sum(cost_vector * sample_weights)
+        # print("Hello from cost_function, this is (1 - y) * np.log(1 - self.probability(theta, x)): {}".format(
+        #     (1 - y) * np.log(1 - self.probability(theta, x))))
+        # print("Im from cost_function and this is the vector before the sum: {}".format(weighted_cost))
+        # print("Hello from cost_function, this is y * np.log(self.probability(theta, x)): {}".format(y * np.log(self.probability(theta, x))))
+        # print("Im from cost_function and this is y: {}".format(y))
+        # print("Im from cost_function and this is x: {}".format(x))
+        # print("Im from cost_function and this is theta: {}".format(theta))
+        # print("Im from cost_function and this is the sum: {}".format(np.sum(y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x)))))
+        # print("Im from cost_function and this is the vector before the sum: {}".format(y * np.log(self.probability(theta, x)) + (1 - y) * np.log(1 - self.probability(theta, x))))
+        # print("Im from cost_function and this is weighted_cost: {}".format(weighted_cost))
+        # print("Im from cost_function and this is total cost: {}".format(total_cost))
+        return total_cost
+
+    def gradient(self, theta, x, y):
+        # Computes the gradient of the cost function at the point theta
+        # print("Hello from gradient function the this is m:\n{}".format(m))
+        # print("Hello from gradient this is net input output: {}".format(self.net_input(theta, x)))
+        # print("Hello from gradient this is sigmoid output: {}".format(self.sigmoid(self.net_input(theta, x))))
+        # print("Hello from gradient this is dot output: {}".format(np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)))
+        # print("This is sigmoid_output: ", sigmoid_output)
+        # print("This is weighted_sigmoid: ", weighted_sigmoid)
+        return np.dot(x.T, self.sigmoid(self.net_input(theta, x)) - y)
+
+    def fit(self, x, y, theta, sample_weights):
+        """trains the model from the training data
+        Uses the fmin_tnc function that is used to find the minimum for any function
+        It takes arguments as
+            1) func : function to minimize
+            2) x0 : initial values for the parameters
+            3) fprime: gradient for the function defined by 'func'
+            4) args: arguments passed to the function
+        Parameters
+        ----------
+        x: array-like, shape = [n_samples, n_features]
+            Training samples
+        y: array-like, shape = [n_samples, n_target_values]
+            Target classes
+        theta: initial weights
+        sample_weights: the weights of dataset points
+        Returns
+        -------
+        self: An instance of self
+        """
+        # print("Hello from Logistic regression fit, this is y: {}".format(y))
+        # print("Hello from Logistic regression fit, this is type(y): {}".format(type(y)))
+        # print("Hello from Logistic regression fit, this is y.flatten: {}".format(y.flatten()))
+        # opt_weights = fmin_tnc(func=self.cost_function, x0=theta, fprime=self.gradient,
+        #                        args=(x, y.flatten(), sample_weights))
+        # self.w_ = opt_weights[0]
+        # return self
+        # weights = np.zeros((1, x.shape[0]))
+        # weights[0][32] = 1
+        # weights[0][98] = 1
+
+        lr = 0.05
+        for i in range(1000):
+            # Here I create my prediction vector
+            z = np.dot(x, theta)
+            # Here I sigmoid my prediction result to classify my predictions
+            h = self.sigmoid(z)
+            #
+            gradient = np.dot(x.T * sample_weights, (h - y)) / y.size
+            # print("This is gradient shape: ", gradient.shape)
+            # print("This is theta: {}\nThis is gradient: {}".format(theta, gradient))
+            # print("This is z: {}\nThis is h: {}".format(z, h))
+            theta -= lr * gradient
+        theta = theta.T.reshape((3,))
+        self.w_ = theta
+        return self
+
+    def predict(self, x, probab_threshold=0.5):
+        """ Predicts the class labels
+        Parameters and returns ndarray from {1,-1} values
+        ----------
+        x: array-like, shape = [n_samples, n_features]
+            Test samples
+        Returns
+        probab_threshold: number from 0 to 1 - for classification
+        -------
+        predicted class labels
+        """
+        theta = self.w_[:, np.newaxis]
+        logistic_prob = self.probability(theta, x)
+        logistic_regression_pred = (logistic_prob >= probab_threshold).astype(int)
+        logistic_regression_pred = (logistic_regression_pred * 2) - 1
+        logistic_regression_pred = logistic_regression_pred.flatten()
+        return logistic_regression_pred
+        # print("Hello from predict logistic_prob = ",logistic_prob)
+        # print(type(logistic_regression_pred))
+        # print(logistic_regression_pred)
+        # return self.probability(theta, x)
+
+    def accuracy(self, x, actual_classes, probab_threshold=0.5):
+        """Computes the accuracy of the classifier
+        Parameters
+        ----------
+        x: array-like, shape = [n_samples, n_features]
+            Training samples
+        actual_classes : class labels from the training data set
+        probab_threshold: threshold/cutoff to categorize the samples into different classes
+        Returns
+        -------
+        accuracy: accuracy of the model
+        """
+        predicted_classes = (self.predict(x) >= probab_threshold).astype(int)
+        predicted_classes = predicted_classes.flatten()
+        accuracy = np.mean(predicted_classes == actual_classes)
+        return accuracy * 100
+
+# ------------------------------------------------------------------------------------------------------------------------
+
+def make_adaboost_vec(prediction):
+    adaboost_vec = []
+
+    for i in prediction:
+        if i == 0:
+            adaboost_vec.append(-1)
+        else:
+            adaboost_vec.append(1)
+
+    return adaboost_vec
 
 
 def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
     """ Fit the model using training data """
-
+    # 
     X, y = self._check_X_y(X, y)
     n = X.shape[0]
-    theta = np.zeros((X.shape[1], 1))
 
     # init numpy arrays
     self.sample_weights = np.zeros(shape=(iters, n))
@@ -377,20 +407,26 @@ def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
     self.sample_weights[0] = np.ones(shape=n) / n
 
     for t in range(iters):
+        print("--------- Iteration number {} ------------".format(t))
         # fit  weak learner
         curr_sample_weights = self.sample_weights[t]
+        print("This is the current weights: ", curr_sample_weights)
+        stump = LogisticRegressionGD()
+        # stump = LogisticRegressionUsingGD()
+        print("\t--------- Here is fit function output ------------")
+        stump = stump.fit(X, y, sample_weights=curr_sample_weights)
+        # -------------- Not working --------------
+        # theta = np.zeros((X.shape[1], 1))
+        # stump = stump.fit(X, y, theta, sample_weights=curr_sample_weights)
+        # -----------------------------------------
+        print("\t--------- Here is the end of fit function output ------------")
         # stump = DecisionTreeClassifier(max_depth=1, max_leaf_nodes=2)
         # stump = stump.fit(X, y, sample_weight=curr_sample_weights)
-        # stump = LogisticRegressionUsingGD()
-        stump = LogisticRegressionGD()
-        y = (y + 1) / 2
-        # print("This is the current sample weights: ",curr_sample_weights)
-        stump = stump.fit(X, y, sample_weights=curr_sample_weights)
 
         # calculate error and stump weight from weak learner prediction
         stump_pred = stump.predict(X)
-        # print("Hello from AdaBoost fit function, logistic regression pred is: ", stump_pred)
-        y = (y * 2) - 1
+        print("This is y: ",y)
+        print("This is stump_pred: ", stump_pred)
         err = curr_sample_weights[(stump_pred != y)].sum()  # / n
         stump_weight = np.log((1 - err) / err) / 2
 
@@ -401,6 +437,11 @@ def fit(self, X: np.ndarray, y: np.ndarray, iters: int):
         # If not final iteration, update sample weights for t+1
         if t + 1 < iters:
             self.sample_weights[t + 1] = new_sample_weights
+
+        print("This is stump: ", stump)
+        print("This is stump_weight: ", stump_weight)
+        print("This is err: ", err)
+        print("\n")
 
         # save results of iteration
         self.stumps[t] = stump
@@ -462,10 +503,13 @@ def plot_staged_adaboost(X, y, clf, iters=10):
 AdaBoost.fit = fit
 AdaBoost.predict = predict
 X, y = make_toy_dataset(n=10, random_seed=10)
-print("This is X: ", X)
+# print("This is X: ", X)
 # X = np.c_[np.ones((X.shape[0], 1)), X]
 clf = AdaBoost().fit(X, y, iters=10)
 plot_staged_adaboost(X, y, clf)
+
+train_err = (clf.predict(X) != y).mean()
+print(f'Train error: {train_err:.1%}')
 
 # print(X)
 # print(X[:,[0]]) # This is x
