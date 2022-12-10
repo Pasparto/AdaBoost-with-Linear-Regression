@@ -1,5 +1,5 @@
 # Repository Name
-Adaboost
+Adaboost with linear regression
 
 ## Description
 
