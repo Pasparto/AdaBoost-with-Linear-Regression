@@ -1,5 +1,5 @@
 # Repository Name
-[Name of Repository]
+Adaboost
 
 ## Description
 
