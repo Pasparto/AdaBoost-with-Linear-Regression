@@ -55,3 +55,7 @@ Second, I reproduced AdaBoost algorithm including all the graphs + benchmarks, f
 https://geoffruddock.com/adaboost-from-scratch-in-python/
 
 My final step is to change that Adaboost implementation and replace the Decision tree learner (AKA weak learner) with Logistic Regression learner.
+
+
+## Plot
+![plot](https://github.com/pasparto/AdaBoost-with-Linear-Regression/data/plot-weak-and-strong-learner.jpg?raw=true)
