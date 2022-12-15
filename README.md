@@ -58,4 +58,4 @@ My final step is to change that Adaboost implementation and replace the Decision
 
 
 ## Plot
-![plot](https://github.com/pasparto/AdaBoost-with-Linear-Regression/data/plot-weak-and-strong-learner.jpg?raw=true)
+![plot](https://github.com/Pasparto/AdaBoost-with-Linear-Regression/blob/master/data/plot-weak-and-strong-learner.jpg?raw=true)
