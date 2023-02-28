@@ -1,5 +1,4 @@
-# Repository Name
-Adaboost with linear regression
+# Adaboost with linear regression
 
 ## Description
 ###### AdaBoost
